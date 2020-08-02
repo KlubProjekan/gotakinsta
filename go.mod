@@ -1,4 +1,4 @@
-module github.com/oxygenesis/gotakinsta/v2
+module github.com/klubprojekan/gotakinsta/v2
 
 go 1.12
 
