@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 
-	"github.com/oxygenesis/gotakinsta"
+	"github.com/klubprojekan/gotakinsta"
 )
 
 // ExportAsBytes exports selected *Instagram object as []byte

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/oxygenesis/gotakinsta"
-	"github.com/oxygenesis/gotakinsta/utilities"
+	"github.com/klubprojekan/gotakinsta"
+	"github.com/klubprojekan/gotakinsta/utilities"
 )
 
 func main() {
