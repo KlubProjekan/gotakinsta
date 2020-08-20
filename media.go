@@ -965,10 +965,10 @@ func (media *FeedMedia) Next(params ...interface{}) bool {
 }
 
 // UploadPhoto post image from io.Reader to instagram.
-func (insta *Instagram) UploadPhoto(photo io.Reader, photoCaption string, quality int, filterType int) (Item, error) {
+func (insta *Instagram) UploadPhoto(photo io.Reader, photoCaption string, quality int, filterType int, uploadIdParams int64) (Item, error) {
 	out := Item{}
 
-	config, err := insta.postPhoto(photo, photoCaption, quality, filterType, false)
+	config, err := insta.postPhoto(photo, photoCaption, quality, filterType, false, uploadIdParams)
 	if err != nil {
 		return out, err
 	}
@@ -1002,8 +1002,13 @@ func (insta *Instagram) UploadPhoto(photo io.Reader, photoCaption string, qualit
 	return uploadResult.Media, nil
 }
 
-func (insta *Instagram) postPhoto(photo io.Reader, photoCaption string, quality int, filterType int, isSidecar bool) (map[string]interface{}, error) {
-	uploadID := time.Now().Unix()
+func (insta *Instagram) postPhoto(photo io.Reader, photoCaption string, quality int, filterType int, isSidecar bool, uploadIdParams int64) (map[string]interface{}, error) {
+	var uploadID int64
+	if uploadIdParams == 0  {
+		uploadID = time.Now().Unix()
+	}else{
+		uploadID = uploadIdParams
+	}
 	rndNumber := rand.Intn(9999999999-1000000000) + 1000000000
 	name := strconv.FormatInt(uploadID, 10) + "_0_" + strconv.Itoa(rndNumber)
 	buf := new(bytes.Buffer)
@@ -1115,7 +1120,7 @@ func (insta *Instagram) UploadAlbum(photos []io.Reader, photoCaption string, qua
 
 	var childrenMetadata []map[string]interface{}
 	for _, photo := range photos {
-		config, err := insta.postPhoto(photo, photoCaption, quality, filterType, true)
+		config, err := insta.postPhoto(photo, photoCaption, quality, filterType, true, 0)
 		if err != nil {
 			return out, err
 		}
@@ -1158,4 +1163,167 @@ func (insta *Instagram) UploadAlbum(photos []io.Reader, photoCaption string, qua
 	}
 
 	return uploadResult.Media, nil
+}
+
+func (insta *Instagram) UploadVideo(video io.Reader, photo io.Reader, caption string, feed Item) (Item, error) {
+	out := Item{}
+	config, err := insta.postVideo(video, caption, feed)
+
+	if err != nil {
+		return out, err
+	}
+	uploadIDConfig, _ := config["upload_id"].(int64)
+	_, err = insta.UploadPhoto(photo, caption, feed.NumberOfQualities, feed.FilterType, uploadIDConfig)
+	if err != nil {
+		return out, err
+	}
+
+	data, err := insta.prepareData(config)
+	if err != nil {
+		return out, err
+	}
+
+	body, err := insta.sendRequest(&reqOptions{
+		Endpoint: "media/configure/?",
+		Query:    generateSignature(data),
+		IsPost:   true,
+	})
+	if err != nil {
+		return out, err
+	}
+	var uploadResult struct {
+		Media    Item   `json:"media"`
+		UploadID string `json:"upload_id"`
+		Status   string `json:"status"`
+	}
+	err = json.Unmarshal(body, &uploadResult)
+	if err != nil {
+		return out, err
+	}
+
+	if uploadResult.Status != "ok" {
+		return out, fmt.Errorf("invalid status, result: %s", uploadResult.Status)
+	}
+
+	return uploadResult.Media, nil
+}
+
+func (insta *Instagram) postVideo(video io.Reader, caption string, feed Item) (map[string]interface{}, error) {
+	if len(feed.Videos) > 1 {
+		return map[string]interface{}{}, nil
+	}
+
+	uploadID := time.Now().Unix()
+	rndNumber := rand.Intn(9999999999-1000000000) + 1000000000
+	name := strconv.FormatInt(uploadID, 10) + "_0_" + strconv.Itoa(rndNumber)
+	buf := new(bytes.Buffer)
+
+	_, err := buf.ReadFrom(video)
+	if err != nil {
+		return nil, err
+	}
+
+	bs := buf.Bytes()
+	filterType := feed.FilterType
+	imageHeight := feed.OriginalHeight
+	imageWidth := feed.OriginalWidth
+	duration := feed.VideoDuration
+	req, err := http.NewRequest("POST", goInstaBaseURL+"/rupload_igvideo/"+name, buf)
+	if err != nil {
+		return nil, err
+	}
+
+	ruploadParams := map[string]string{
+		"retry_context":     `{"num_step_auto_retry": 0, "num_reupload": 0, "num_step_manual_retry": 0}`,
+		"media_type":        "2",
+		"upload_id":         strconv.FormatInt(uploadID, 10),
+		"xsharing_user_ids": "[]",
+		"image_compression": `{"lib_name": "moz", "lib_version": "3.1.m", "quality": "80"}`,
+		"upload_media_height": strconv.Itoa(imageHeight),
+		"upload_media_width": strconv.Itoa(imageWidth),
+		"upload_media_duration_ms": fmt.Sprintf("%f", duration),
+	}
+
+
+	params, err := json.Marshal(ruploadParams)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-IG-Capabilities", "3Q4=")
+	req.Header.Set("X-IG-Connection-Type", "WIFI")
+	req.Header.Set("Cookie2", "$Version=1")
+	req.Header.Set("Accept-Language", "en-US")
+	req.Header.Set("Content-type", "application/octet-stream")
+	req.Header.Set("Connection", "close")
+	req.Header.Set("User-Agent", goInstaUserAgent)
+	req.Header.Set("X-Entity-Name", name)
+	req.Header.Set("X-Instagram-Rupload-Params", string(params))
+	req.Header.Set("Offset", "0")
+	req.Header.Set("X-Entity-Length", strconv.FormatInt(req.ContentLength, 10))
+
+	resp, err := insta.c.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("invalid status code, result: %s", resp.Status)
+	}
+
+	var result struct {
+		UploadID       string      `json:"upload_id"`
+		XsharingNonces interface{} `json:"xsharing_nonces"`
+		Status         string      `json:"status"`
+	}
+
+	if err = json.Unmarshal(body, &result); err != nil {
+		return nil, err
+	}
+
+	if result.Status != "ok" {
+		return nil, fmt.Errorf("unknown error, status: %s", result.Status)
+	}
+
+	width, height, err := getImageDimensionFromReader(bytes.NewReader(bs))
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+
+	config := map[string]interface{}{
+		"media_folder": "Instagram",
+		"source_type":  4,
+		"caption":      caption,
+		"upload_id":    strconv.FormatInt(uploadID, 10),
+		"device_id":    insta.dID,
+		"device":       goInstaDeviceSettings,
+		"edits": map[string]interface{}{
+			"crop_original_size": []int{width * 1.0, height * 1.0},
+			"crop_center":        []float32{0.0, 0.0},
+			"crop_zoom":          1.0,
+			"filter_type":        filterType,
+		},
+		"extra": map[string]interface{}{
+			"source_width":  width,
+			"source_height": height,
+		},
+		"height":                height,
+		"width":                 width,
+		"camera_model":          goInstaDeviceSettings["model"],
+		"scene_capture_type":    "standard",
+		"timezone_offset":       "3600",
+		"date_time_original":    now.Format("2020:51:21 22:51:37"),
+		"date_time_digitalized": now.Format("2020:51:21 22:51:37"),
+		"software":              "1",
+	}
+
+	return config, nil
 }
