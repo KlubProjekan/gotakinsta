@@ -6,16 +6,16 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
-	neturl "net/url"
 	"os"
 	"path"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	neturl "net/url"
 )
 
 // StoryReelMention represent story reel mention
@@ -177,10 +177,6 @@ type PostMediaRequest struct {
 	Photos     []io.Reader
 	Video      io.Reader
 	Videos     []io.Reader
-	Caption    string
-	Quality    int
-	FilterType int
-	IsSideCar  bool
 	UploadAttr *UploadAttribute
 }
 
@@ -188,6 +184,13 @@ type PostMediaRequest struct {
 type UploadAttribute struct {
 	UploadID int64
 	Name     string
+}
+
+// PostMediaResponse post media action response body
+type PostMediaResponse struct {
+	UploadID       string      `json:"upload_id"`
+	XsharingNonces interface{} `json:"xsharing_nonces"`
+	Status         string      `json:"status"`
 }
 
 // Comment pushes a text comment to media item.
@@ -1048,23 +1051,9 @@ func (insta *Instagram) UploadVideo(pmRequest PostMediaRequest) (Item, error) {
 		return out, err
 	}
 
-	insta.uploadVideoFinish(pmRequest.UploadAttr.UploadID, pmRequest.VideoDuration)
-
-	config := map[string]interface{}{
-		"upload_id": strconv.FormatInt(pmRequest.UploadAttr.UploadID, 10),
-		"caption":   pmRequest.Caption,
-		"length":    pmRequest.VideoDuration / 1000,
-		"width":     pmRequest.OriginalWidth,
-		"height":    pmRequest.OriginalHeight,
-		"clips": []map[string]interface{}{
-			{
-				"length":      pmRequest.VideoDuration / 1000,
-				"source_type": "4",
-			},
-		},
-		"date_time_original": time.Now().Format("2006:01:02 15:04:05"),
-		"timezone_offset":    25200,
-		"filter_type":        pmRequest.FilterType,
+	config, err := insta.uploadVideoFinish(pmRequest)
+	if err != nil {
+		return out, err
 	}
 
 	data, err := insta.prepareData(config)
@@ -1177,12 +1166,7 @@ func (insta *Instagram) postPhoto(pmRequest PostMediaRequest) (map[string]interf
 		return nil, fmt.Errorf("invalid status code, result: %s", resp.Status)
 	}
 
-	var result struct {
-		UploadID       string      `json:"upload_id"`
-		XsharingNonces interface{} `json:"xsharing_nonces"`
-		Status         string      `json:"status"`
-	}
-
+	var result PostMediaResponse
 	if err = json.Unmarshal(body, &result); err != nil {
 		return nil, err
 	}
@@ -1201,7 +1185,7 @@ func (insta *Instagram) postPhoto(pmRequest PostMediaRequest) (map[string]interf
 	config := map[string]interface{}{
 		"media_folder": "Instagram",
 		"source_type":  4,
-		"caption":      pmRequest.Caption,
+		"caption":      pmRequest.Caption.Text,
 		"upload_id":    strconv.FormatInt(pmRequest.UploadAttr.UploadID, 10),
 		"device_id":    insta.dID,
 		"device":       goInstaDeviceSettings,
@@ -1258,17 +1242,15 @@ func (insta *Instagram) postVideo(pmRequest PostMediaRequest) error {
 		"upload_media_duration_ms": fmt.Sprintf("%f", pmRequest.VideoDuration),
 	}
 
-	if pmRequest.IsSideCar {
-		ruploadParams["is_sidecar"] = "1"
-	}
-
-	// init video
 	waterfallID, err := newUUID()
 	if err != nil {
 		return err
 	}
 
-	insta.initVideo(pmRequest.UploadAttr.Name, ruploadParams, waterfallID)
+	err = insta.initVideo(pmRequest.UploadAttr.Name, ruploadParams, waterfallID)
+	if err != nil {
+		return err
+	}
 
 	params, err := json.Marshal(ruploadParams)
 	if err != nil {
@@ -1301,18 +1283,11 @@ func (insta *Instagram) postVideo(pmRequest PostMediaRequest) error {
 		return err
 	}
 
-	log.Println("resp post video:", string(body))
-
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("invalid status code, result: %s", resp.Status)
 	}
 
-	var result struct {
-		UploadID       string      `json:"upload_id"`
-		XsharingNonces interface{} `json:"xsharing_nonces"`
-		Status         string      `json:"status"`
-	}
-
+	var result PostMediaResponse
 	if err = json.Unmarshal(body, &result); err != nil {
 		return err
 	}
@@ -1324,15 +1299,15 @@ func (insta *Instagram) postVideo(pmRequest PostMediaRequest) error {
 	return nil
 }
 
-func (insta *Instagram) initVideo(name string, ruploadParams map[string]string, waterfallID string) {
+func (insta *Instagram) initVideo(name string, ruploadParams map[string]string, waterfallID string) error {
 	req, err := http.NewRequest("GET", goInstaBaseURL+"/rupload_igvideo/"+name, nil)
 	if err != nil {
-		// return nil, err
+		return err
 	}
 
 	params, err := json.Marshal(ruploadParams)
 	if err != nil {
-		// return nil, err
+		return err
 	}
 
 	// set header
@@ -1345,33 +1320,34 @@ func (insta *Instagram) initVideo(name string, ruploadParams map[string]string, 
 
 	resp, err := insta.c.Do(req)
 	if err != nil {
-
+		return err
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		// return nil, err
-	}
-
-	log.Println("resp init video: ", string(body))
+	return nil
 }
 
-func (insta *Instagram) uploadVideoFinish(uploadID int64, duration float64) {
+func (insta *Instagram) uploadVideoFinish(pmRequest PostMediaRequest) (map[string]interface{}, error) {
 	config := map[string]interface{}{
-		"upload_id":          uploadID,
-		"poster_frame_index": 0,
-		"audio_muted":        false,
+		"upload_id": strconv.FormatInt(pmRequest.UploadAttr.UploadID, 10),
+		"caption":   pmRequest.Caption.Text,
+		"length":    pmRequest.VideoDuration / 1000,
+		"width":     pmRequest.OriginalWidth,
+		"height":    pmRequest.OriginalHeight,
 		"clips": []map[string]interface{}{
 			{
-				"length":      duration / 1000,
+				"length":      pmRequest.VideoDuration / 1000,
 				"source_type": "4",
 			},
 		},
+		"date_time_original": time.Now().Format("2006:01:02 15:04:05"),
+		"timezone_offset":    25200,
+		"filter_type":        pmRequest.FilterType,
 	}
+
 	data, err := insta.prepareData(config)
 	if err != nil {
-		// return out, err
+		return nil, err
 	}
 
 	body, err := insta.sendRequest(&reqOptions{
@@ -1380,10 +1356,20 @@ func (insta *Instagram) uploadVideoFinish(uploadID int64, duration float64) {
 		IsPost:   true,
 	})
 	if err != nil {
-		// return out, err
+		return nil, err
 	}
 
-	log.Println("response finish video: ", string(body))
+	var finishResult PostMediaResponse
+	err = json.Unmarshal(body, &finishResult)
+	if err != nil {
+		return nil, err
+	}
+
+	if finishResult.Status != "ok" {
+		return nil, fmt.Errorf("invalid status, result: %s", finishResult.Status)
+	}
+
+	return config, nil
 }
 
 // UploadAlbum post image from io.Reader to instagram.
@@ -1393,11 +1379,8 @@ func (insta *Instagram) UploadAlbum(pmRequest PostMediaRequest) (Item, error) {
 	var childrenMetadata []map[string]interface{}
 	for _, photo := range pmRequest.Photos {
 		config, err := insta.postPhoto(PostMediaRequest{
-			Photo:      photo,
-			Caption:    pmRequest.Caption,
-			FilterType: pmRequest.FilterType,
-			Quality:    pmRequest.Quality,
-			IsSideCar:  pmRequest.IsSideCar,
+			Item:  pmRequest.Item,
+			Photo: photo,
 		})
 		if err != nil {
 			return out, err
@@ -1408,7 +1391,7 @@ func (insta *Instagram) UploadAlbum(pmRequest PostMediaRequest) (Item, error) {
 	albumUploadID := time.Now().Unix()
 
 	config := map[string]interface{}{
-		"caption":           pmRequest.Caption,
+		"caption":           pmRequest.Caption.Text,
 		"client_sidecar_id": albumUploadID,
 		"children_metadata": childrenMetadata,
 	}

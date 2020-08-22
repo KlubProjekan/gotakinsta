@@ -24,16 +24,38 @@ func main() {
 
 	log.Println("logged in")
 
-	feeds, _ := insta.Feed.Tags("kucinglucuk")
+	feeds, _ := insta.Feed.Tags("anjinglucu")
 
 	for _, feed := range feeds.Images {
 		if feed.MediaType == 2 {
-			log.Println("start to download feed photo")
+			log.Println("start to download feed video")
 			video, err := urlToBuffer(feed.Videos[0].URL)
 			if err != nil {
-				log.Println("failed read photo ", feed.Videos[0].URL)
+				log.Println("failed read video ", feed.Videos[0].URL)
 				continue
 			}
+
+			photo, err := urlToBuffer(feed.Images.Versions[0].URL)
+			if err != nil {
+				log.Println("failed read video ", feed.Images.Versions[0].URL)
+				continue
+			}
+
+			request := goinsta.PostMediaRequest{
+				Video: video,
+				Photo: photo,
+				Item:  feed,
+			}
+
+			log.Println("start to repost video")
+			_, err = insta.UploadVideo(request)
+			if err != nil {
+				log.Println("failed to upload video ", err)
+				continue
+			}
+			log.Println("success repost video")
+		} else if feed.MediaType == 1 {
+			log.Println("start to download feed photo")
 
 			photo, err := urlToBuffer(feed.Images.Versions[0].URL)
 			if err != nil {
@@ -42,16 +64,12 @@ func main() {
 			}
 
 			request := goinsta.PostMediaRequest{
-				Video:      video,
-				Photo:      photo,
-				Caption:    feed.Caption.Text,
-				Quality:    feed.NumberOfQualities,
-				FilterType: feed.FilterType,
-				Item:       feed,
+				Photo: photo,
+				Item:  feed,
 			}
 
-			log.Println("start to repost video")
-			_, err = insta.UploadVideo(request)
+			log.Println("start to repost photo")
+			_, err = insta.UploadPhoto(request)
 			if err != nil {
 				log.Println("failed to upload photo ", err)
 				continue
@@ -59,13 +77,13 @@ func main() {
 			log.Println("success repost photo")
 		}
 
-		// break
+		time.Sleep(time.Duration(10) * time.Second)
 	}
 
 }
 
 var client = &http.Client{
-	Timeout: time.Duration(5) * time.Second,
+	Timeout: time.Duration(150) * time.Second,
 }
 
 func urlToBuffer(url string) (io.Reader, error) {
