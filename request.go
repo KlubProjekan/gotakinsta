@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type reqOptions struct {
@@ -105,14 +104,17 @@ func (insta *Instagram) sendRequest(o *reqOptions) (body []byte, err error) {
 	}
 	defer resp.Body.Close()
 
-	u, _ = url.Parse(goInstaAPIUrl)
+	u, err = url.Parse(goInstaAPIUrl)
+	if err != nil {
+		return nil, err
+	}
 	for _, value := range insta.c.Jar.Cookies(u) {
 		if strings.Contains(value.Name, "csrftoken") {
 			insta.token = value.Value
 		}
 	}
 
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = io.ReadAll(resp.Body)
 	if err == nil {
 		err = isError(resp.StatusCode, body)
 	}
@@ -167,10 +169,10 @@ func (insta *Instagram) prepareData(other ...map[string]interface{}) (string, er
 		}
 	}
 	b, err := json.Marshal(data)
-	if err == nil {
-		return b2s(b), err
+	if err != nil {
+		return "", err
 	}
-	return "", err
+	return b2s(b), nil
 }
 
 func (insta *Instagram) prepareDataQuery(other ...map[string]interface{}) map[string]string {
@@ -187,6 +189,5 @@ func (insta *Instagram) prepareDataQuery(other ...map[string]interface{}) map[st
 }
 
 func acquireRand(min, max int) int {
-	rand.Seed(time.Now().Unix())
 	return rand.Intn(max-min) + min
 }

@@ -11,6 +11,12 @@ import (
 	"unsafe"
 )
 
+// b2s converts a byte slice to a string without copying the underlying data.
+// This relies on the fact that string and []byte share the same memory layout
+// in the Go runtime. The caller must not modify b after this call, as doing so
+// would mutate the returned string (which violates Go's string immutability).
+// Used here solely for performance on short-lived JSON payloads that are
+// immediately consumed by the HTTP layer.
 func b2s(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
