@@ -102,7 +102,7 @@ func (account *Account) Sync() error {
 func (account *Account) ChangePassword(old, new string) error {
 	insta := account.inst
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"old_password":  old,
 			"new_password1": new,
 			"new_password2": new,
@@ -249,7 +249,7 @@ func (account *Account) Following() *Users {
 // minTime is the minimum timestamp of media.
 //
 // For pagination use FeedMedia.Next()
-func (account *Account) Feed(params ...interface{}) *FeedMedia {
+func (account *Account) Feed(params ...any) *FeedMedia {
 	insta := account.inst
 
 	media := &FeedMedia{}
@@ -351,7 +351,7 @@ func (account *Account) SetBiography(bio string) error {
 	account.edit() // preparing to edit
 	insta := account.inst
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"raw_text": bio,
 		},
 	)
@@ -424,7 +424,7 @@ func (account *Account) PendingFollowRequests() ([]User, error) {
 // Archived returns current account archive feed
 //
 // For pagination use FeedMedia.Next()
-func (account *Account) Archived(params ...interface{}) *FeedMedia {
+func (account *Account) Archived(params ...any) *FeedMedia {
 	insta := account.inst
 
 	media := &FeedMedia{}

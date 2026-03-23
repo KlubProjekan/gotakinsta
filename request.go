@@ -36,7 +36,7 @@ type reqOptions struct {
 	Query map[string]string
 }
 
-func (insta *Instagram) sendSimpleRequest(uri string, a ...interface{}) (body []byte, err error) {
+func (insta *Instagram) sendSimpleRequest(uri string, a ...any) (body []byte, err error) {
 	return insta.sendRequest(
 		&reqOptions{
 			Endpoint: fmt.Sprintf(uri, a...),
@@ -154,8 +154,8 @@ func isError(code int, body []byte) (err error) {
 	return nil
 }
 
-func (insta *Instagram) prepareData(other ...map[string]interface{}) (string, error) {
-	data := map[string]interface{}{
+func (insta *Instagram) prepareData(other ...map[string]any) (string, error) {
+	data := map[string]any{
 		"_uuid":      insta.uuid,
 		"_csrftoken": insta.token,
 	}
@@ -175,7 +175,7 @@ func (insta *Instagram) prepareData(other ...map[string]interface{}) (string, er
 	return b2s(b), nil
 }
 
-func (insta *Instagram) prepareDataQuery(other ...map[string]interface{}) map[string]string {
+func (insta *Instagram) prepareDataQuery(other ...map[string]any) map[string]string {
 	data := map[string]string{
 		"_uuid":      insta.uuid,
 		"_csrftoken": insta.token,

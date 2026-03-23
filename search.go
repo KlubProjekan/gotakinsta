@@ -27,14 +27,14 @@ type SearchResult struct {
 		ID               int64       `json:"id"`
 		Name             string      `json:"name"`
 		MediaCount       int         `json:"media_count"`
-		FollowStatus     interface{} `json:"follow_status"`
-		Following        interface{} `json:"following"`
-		AllowFollowing   interface{} `json:"allow_following"`
-		AllowMutingStory interface{} `json:"allow_muting_story"`
-		ProfilePicURL    interface{} `json:"profile_pic_url"`
-		NonViolating     interface{} `json:"non_violating"`
-		RelatedTags      interface{} `json:"related_tags"`
-		DebugInfo        interface{} `json:"debug_info"`
+		FollowStatus     any `json:"follow_status"`
+		Following        any `json:"following"`
+		AllowFollowing   any `json:"allow_following"`
+		AllowMutingStory any `json:"allow_muting_story"`
+		ProfilePicURL    any `json:"profile_pic_url"`
+		NonViolating     any `json:"non_violating"`
+		RelatedTags      any `json:"related_tags"`
+		DebugInfo        any `json:"debug_info"`
 	} `json:"results"`
 
 	// Location search result
@@ -50,7 +50,7 @@ type SearchResult struct {
 
 	// Facebook
 	// Facebook also uses `Users`
-	Places   []interface{} `json:"places"`
+	Places   []any `json:"places"`
 	Hashtags []struct {
 		Position int `json:"position"`
 		Hashtag  struct {

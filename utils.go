@@ -21,7 +21,7 @@ func b2s(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
-func toString(i interface{}) string {
+func toString(i any) string {
 	switch s := i.(type) {
 	case string:
 		return s
@@ -59,7 +59,7 @@ func toString(i interface{}) string {
 	return ""
 }
 
-func prepareRecipients(cc interface{}) (bb string, err error) {
+func prepareRecipients(cc any) (bb string, err error) {
 	var b []byte
 	ids := make([][]int64, 0)
 	switch c := cc.(type) {

@@ -142,7 +142,7 @@ type User struct {
 	ExternalLynxURL            string  `json:"external_lynx_url"`
 	BiographyWithEntities      struct {
 		RawText  string        `json:"raw_text"`
-		Entities []interface{} `json:"entities"`
+		Entities []any `json:"entities"`
 	} `json:"biography_with_entities"`
 	UsertagsCount                int          `json:"usertags_count"`
 	HasChaining                  bool         `json:"has_chaining"`
@@ -197,7 +197,7 @@ func (inst *Instagram) NewUser() *User {
 // 		bool: must be true if you want to include FriendShip call. See goinsta.FriendShip
 //
 // See example: examples/user/friendship.go
-func (user *User) Sync(params ...interface{}) error {
+func (user *User) Sync(params ...any) error {
 	insta := user.inst
 	body, err := insta.sendSimpleRequest(urlUserInfo, user.ID)
 	if err == nil {
@@ -251,7 +251,7 @@ func (user *User) Followers() *Users {
 func (user *User) Block() error {
 	insta := user.inst
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"user_id": user.ID,
 		},
 	)
@@ -286,7 +286,7 @@ func (user *User) Block() error {
 func (user *User) Unblock() error {
 	insta := user.inst
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"user_id": user.ID,
 		},
 	)
@@ -359,8 +359,8 @@ func muteOrUnmute(user *User, opt muteOption, endpoint string) error {
 	return nil
 }
 
-func generateMuteData(user *User, opt muteOption) map[string]interface{} {
-	data := map[string]interface{}{
+func generateMuteData(user *User, opt muteOption) map[string]any {
+	data := map[string]any{
 		"user_id": user.ID,
 	}
 
@@ -388,7 +388,7 @@ func generateMuteData(user *User, opt muteOption) map[string]interface{} {
 func (user *User) Follow() error {
 	insta := user.inst
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"user_id": user.ID,
 		},
 	)
@@ -423,7 +423,7 @@ func (user *User) Follow() error {
 func (user *User) Unfollow() error {
 	insta := user.inst
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"user_id": user.ID,
 		},
 	)
@@ -456,7 +456,7 @@ func (user *User) Unfollow() error {
 func (user *User) FriendShip() error {
 	insta := user.inst
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"user_id": user.ID,
 		},
 	)
@@ -484,7 +484,7 @@ func (user *User) FriendShip() error {
 // For pagination use FeedMedia.Next()
 //
 // See example: examples/user/feed.go
-func (user *User) Feed(params ...interface{}) *FeedMedia {
+func (user *User) Feed(params ...any) *FeedMedia {
 	insta := user.inst
 
 	media := &FeedMedia{}

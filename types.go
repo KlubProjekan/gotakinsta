@@ -119,10 +119,10 @@ type SuggestedUsers struct {
 		SocialContext   string        `json:"social_context"`
 		Icon            string        `json:"icon"`
 		Caption         string        `json:"caption"`
-		MediaIds        []interface{} `json:"media_ids"`
-		ThumbnailUrls   []interface{} `json:"thumbnail_urls"`
-		LargeUrls       []interface{} `json:"large_urls"`
-		MediaInfos      []interface{} `json:"media_infos"`
+		MediaIds        []any `json:"media_ids"`
+		ThumbnailUrls   []any `json:"thumbnail_urls"`
+		LargeUrls       []any `json:"large_urls"`
+		MediaInfos      []any `json:"media_infos"`
 		Value           float64       `json:"value"`
 		IsNewSuggestion bool          `json:"is_new_suggestion"`
 	} `json:"suggestions"`
@@ -190,8 +190,8 @@ type Tag struct {
 	In []struct {
 		User                  User        `json:"user"`
 		Position              []float64   `json:"position"`
-		StartTimeInVideoInSec interface{} `json:"start_time_in_video_in_sec"`
-		DurationInVideoInSec  interface{} `json:"duration_in_video_in_sec"`
+		StartTimeInVideoInSec any `json:"start_time_in_video_in_sec"`
+		DurationInVideoInSec  any `json:"duration_in_video_in_sec"`
 	} `json:"in"`
 }
 
@@ -339,7 +339,7 @@ type InboxItemMedia struct {
 		MediaType int64 `json:"media_type"`
 	} `json:"raven_media"`
 	ReplyChainCount int           `json:"reply_chain_count"`
-	SeenUserIds     []interface{} `json:"seen_user_ids"`
+	SeenUserIds     []any `json:"seen_user_ids"`
 	Timestamp       int64         `json:"timestamp"`
 	UserID          int64         `json:"user_id"`
 	ViewMode        string        `json:"view_mode"`

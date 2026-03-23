@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	goInstaDeviceSettings = map[string]interface{}{
+	goInstaDeviceSettings = map[string]any{
 		"manufacturer":    "OnePlus",
 		"model":           "A3010",
 		"android_version": 24,

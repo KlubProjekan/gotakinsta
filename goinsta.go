@@ -354,7 +354,7 @@ func (inst *Instagram) zrToken() error {
 
 func (inst *Instagram) sendAdID() error {
 	data, err := inst.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"adid": inst.adid,
 		},
 	)
@@ -402,7 +402,7 @@ func (inst *Instagram) Login() error {
 	}
 
 	result, err := json.Marshal(
-		map[string]interface{}{
+		map[string]any{
 			"guid":                inst.uuid,
 			"login_attempt_count": 0,
 			"_csrftoken":          inst.token,
@@ -462,7 +462,7 @@ func (inst *Instagram) Logout() error {
 
 func (inst *Instagram) syncFeatures() error {
 	data, err := inst.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"id":          inst.uuid,
 			"experiments": goInstaExperiments,
 		},
@@ -484,7 +484,7 @@ func (inst *Instagram) syncFeatures() error {
 
 func (inst *Instagram) megaphoneLog() error {
 	data, err := inst.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"id":        inst.Account.ID,
 			"type":      "feed_aysf",
 			"action":    "seen",
@@ -509,7 +509,7 @@ func (inst *Instagram) megaphoneLog() error {
 
 func (inst *Instagram) expose() error {
 	data, err := inst.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"id":         inst.Account.ID,
 			"experiment": "ig_android_profile_contextual_feed",
 		},
@@ -534,7 +534,7 @@ func (inst *Instagram) expose() error {
 // The argument can be int64 or string
 //
 // See example: examples/media/like.go
-func (inst *Instagram) GetMedia(o interface{}) (*FeedMedia, error) {
+func (inst *Instagram) GetMedia(o any) (*FeedMedia, error) {
 	media := &FeedMedia{
 		inst:   inst,
 		NextID: o,

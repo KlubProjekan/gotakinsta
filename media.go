@@ -39,10 +39,10 @@ type StoryCTA struct {
 		Package                                 string      `json:"package"`
 		DeeplinkURI                             string      `json:"deeplinkUri"`
 		CallToActionTitle                       string      `json:"callToActionTitle"`
-		RedirectURI                             interface{} `json:"redirectUri"`
+		RedirectURI                             any `json:"redirectUri"`
 		LeadGenFormID                           string      `json:"leadGenFormId"`
 		IgUserID                                string      `json:"igUserId"`
-		AppInstallObjectiveInvalidationBehavior interface{} `json:"appInstallObjectiveInvalidationBehavior"`
+		AppInstallObjectiveInvalidationBehavior any `json:"appInstallObjectiveInvalidationBehavior"`
 	} `json:"links"`
 }
 
@@ -73,7 +73,7 @@ type Item struct {
 	HasLiked         bool    `json:"has_liked"`
 	// Toplikers can be `string` or `[]string`.
 	// Use TopLikers function instead of getting it directly.
-	Toplikers                    interface{} `json:"top_likers"`
+	Toplikers                    any `json:"top_likers"`
 	Likers                       []User      `json:"likers"`
 	CommentLikesEnabled          bool        `json:"comment_likes_enabled"`
 	CommentThreadingEnabled      bool        `json:"comment_threading_enabled"`
@@ -81,7 +81,7 @@ type Item struct {
 	MaxNumVisiblePreviewComments int         `json:"max_num_visible_preview_comments"`
 	// Previewcomments can be `string` or `[]string` or `[]Comment`.
 	// Use PreviewComments function instead of getting it directly.
-	Previewcomments interface{} `json:"preview_comments,omitempty"`
+	Previewcomments any `json:"preview_comments,omitempty"`
 	CommentCount    int         `json:"comment_count"`
 	PhotoOfYou      bool        `json:"photo_of_you"`
 	// Tags are tagged people in photo
@@ -111,16 +111,16 @@ type Item struct {
 	NumberOfQualities int     `json:"number_of_qualities,omitempty"`
 
 	// Only for stories
-	StoryEvents              []interface{}      `json:"story_events"`
-	StoryHashtags            []interface{}      `json:"story_hashtags"`
-	StoryPolls               []interface{}      `json:"story_polls"`
-	StoryFeedMedia           []interface{}      `json:"story_feed_media"`
-	StorySoundOn             []interface{}      `json:"story_sound_on"`
-	CreativeConfig           interface{}        `json:"creative_config"`
-	StoryLocations           []interface{}      `json:"story_locations"`
-	StorySliders             []interface{}      `json:"story_sliders"`
-	StoryQuestions           []interface{}      `json:"story_questions"`
-	StoryProductItems        []interface{}      `json:"story_product_items"`
+	StoryEvents              []any      `json:"story_events"`
+	StoryHashtags            []any      `json:"story_hashtags"`
+	StoryPolls               []any      `json:"story_polls"`
+	StoryFeedMedia           []any      `json:"story_feed_media"`
+	StorySoundOn             []any      `json:"story_sound_on"`
+	CreativeConfig           any        `json:"creative_config"`
+	StoryLocations           []any      `json:"story_locations"`
+	StorySliders             []any      `json:"story_sliders"`
+	StoryQuestions           []any      `json:"story_questions"`
+	StoryProductItems        []any      `json:"story_product_items"`
 	StoryCTA                 []StoryCTA         `json:"story_cta"`
 	ReelMentions             []StoryReelMention `json:"reel_mentions"`
 	SupportsReelReactions    bool               `json:"supports_reel_reactions"`
@@ -188,7 +188,7 @@ type UploadAttribute struct {
 // PostMediaResponse post media action response body
 type PostMediaResponse struct {
 	UploadID       string      `json:"upload_id"`
-	XsharingNonces interface{} `json:"xsharing_nonces"`
+	XsharingNonces any `json:"xsharing_nonces"`
 	Status         string      `json:"status"`
 }
 
@@ -209,7 +209,7 @@ func (item *Item) Comment(text string) error {
 		}
 
 		query := insta.prepareDataQuery(
-			map[string]interface{}{
+			map[string]any{
 				"recipient_users": to,
 				"action":          "send_item",
 				"media_id":        item.ID,
@@ -228,7 +228,7 @@ func (item *Item) Comment(text string) error {
 	case *FeedMedia: // normal media
 		var data string
 		data, err = insta.prepareData(
-			map[string]interface{}{
+			map[string]any{
 				"comment_text": text,
 			},
 		)
@@ -313,7 +313,7 @@ type bestMedia struct {
 // GetBest returns best quality image or video.
 //
 // Arguments can be []Video or []Candidate
-func GetBest(obj interface{}) string {
+func GetBest(obj any) string {
 	m := bestMedia{}
 
 	switch t := obj.(type) {
@@ -374,7 +374,7 @@ func (item *Item) Hashtags() []Hashtag {
 func (item *Item) Delete() error {
 	insta := item.media.instagram()
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"media_id": item.ID,
 		},
 	)
@@ -415,7 +415,7 @@ func (item *Item) SyncLikers() error {
 func (item *Item) Unlike() error {
 	insta := item.media.instagram()
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"media_id": item.ID,
 		},
 	)
@@ -439,7 +439,7 @@ func (item *Item) Unlike() error {
 func (item *Item) Like() error {
 	insta := item.media.instagram()
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"media_id": item.ID,
 		},
 	)
@@ -463,7 +463,7 @@ func (item *Item) Like() error {
 func (item *Item) Save() error {
 	insta := item.media.instagram()
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"media_id": item.ID,
 		},
 	)
@@ -562,13 +562,13 @@ func (item *Item) TopLikers() []string {
 // If PreviewComments are string or []string only the Text field will be filled.
 func (item *Item) PreviewComments() []Comment {
 	switch s := item.Previewcomments.(type) {
-	case []interface{}:
+	case []any:
 		if len(s) == 0 {
 			return nil
 		}
 
 		switch s[0].(type) {
-		case interface{}:
+		case any:
 			comments := make([]Comment, 0)
 			for i := range s {
 				if buf, err := json.Marshal(s[i]); err != nil {
@@ -613,7 +613,7 @@ func (item *Item) StoryIsCloseFriends() bool {
 //Media interface defines methods for both StoryMedia and FeedMedia.
 type Media interface {
 	// Next allows pagination
-	Next(...interface{}) bool
+	Next(...any) bool
 	// Error returns error (in case it have been occurred)
 	Error() error
 	// ID returns media id
@@ -632,7 +632,7 @@ type StoryMedia struct {
 
 	err error
 
-	Pk              interface{} `json:"id"`
+	Pk              any `json:"id"`
 	LatestReelMedia int64       `json:"latest_reel_media"`
 	ExpiringAt      float64     `json:"expiring_at"`
 	HaveBeenSeen    float64     `json:"seen"`
@@ -645,7 +645,7 @@ type StoryMedia struct {
 	ReelMentions    []string    `json:"reel_mentions"`
 	PrefetchCount   int         `json:"prefetch_count"`
 	// this field can be int or bool
-	HasBestiesMedia      interface{} `json:"has_besties_media"`
+	HasBestiesMedia      any `json:"has_besties_media"`
 	StoryRankingToken    string      `json:"story_ranking_token"`
 	Broadcasts           []Broadcast `json:"broadcasts"`
 	FaceFilterNuxVersion int         `json:"face_filter_nux_version"`
@@ -659,7 +659,7 @@ type StoryMedia struct {
 func (media *StoryMedia) Delete() error {
 	insta := media.inst
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"media_id": media.ID(),
 		},
 	)
@@ -706,7 +706,7 @@ func (media StoryMedia) Error() error {
 func (media *StoryMedia) Seen() error {
 	insta := media.inst
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"container_module":   "feed_timeline",
 			"live_vods_skipped":  "",
 			"nuxes_skipped":      "",
@@ -756,7 +756,7 @@ func (media *StoryMedia) Sync() error {
 
 	id := media.Pk.(string)
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"user_ids":                   []string{id},
 			"supported_capabilities_new": b2s(qjson),
 		},
@@ -794,7 +794,7 @@ func (media *StoryMedia) Sync() error {
 //
 // returns false when list reach the end
 // if StoryMedia.Error() is ErrNoMore no problem have been occurred.
-func (media *StoryMedia) Next(params ...interface{}) bool {
+func (media *StoryMedia) Next(params ...any) bool {
 	if media.err != nil {
 		return false
 	}
@@ -805,7 +805,7 @@ func (media *StoryMedia) Next(params ...interface{}) bool {
 		endpoint = fmt.Sprintf(endpoint, media.uid)
 	}
 
-	body, err := insta.sendSimpleRequest(endpoint)
+	body, err := insta.sendSimpleRequest("%s", endpoint)
 	if err == nil {
 		m := StoryMedia{}
 		err = json.Unmarshal(body, &m)
@@ -840,7 +840,7 @@ type FeedMedia struct {
 	Status              string `json:"status"`
 	// Can be int64 and string
 	// this is why we recommend Next() usage :')
-	NextID interface{} `json:"next_max_id"`
+	NextID any `json:"next_max_id"`
 }
 
 // Delete deletes all items in media. Take care...
@@ -864,7 +864,7 @@ func (media *FeedMedia) SetInstagram(inst *Instagram) {
 
 // SetID sets media ID
 // this value can be int64 or string
-func (media *FeedMedia) SetID(id interface{}) {
+func (media *FeedMedia) SetID(id any) {
 	media.NextID = id
 }
 
@@ -874,7 +874,7 @@ func (media *FeedMedia) Sync() error {
 	insta := media.inst
 
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"media_id": id,
 		},
 	)
@@ -931,7 +931,7 @@ func (media *FeedMedia) ID() string {
 // Params: ranked_content is set to "true" by default, you can set it to false by either passing "false" or false as parameter.
 // returns false when list reach the end.
 // if FeedMedia.Error() is ErrNoMore no problem have been occurred.
-func (media *FeedMedia) Next(params ...interface{}) bool {
+func (media *FeedMedia) Next(params ...any) bool {
 	if media.err != nil {
 		return false
 	}
@@ -1105,7 +1105,7 @@ func generateUploadAttr() (int64, string) {
 	return uploadID, name
 }
 
-func (insta *Instagram) postPhoto(pmRequest PostMediaRequest) (map[string]interface{}, error) {
+func (insta *Instagram) postPhoto(pmRequest PostMediaRequest) (map[string]any, error) {
 	if pmRequest.UploadAttr == nil {
 		uploadID, name := generateUploadAttr()
 		pmRequest.UploadAttr = &UploadAttribute{
@@ -1181,20 +1181,20 @@ func (insta *Instagram) postPhoto(pmRequest PostMediaRequest) (map[string]interf
 
 	now := time.Now()
 
-	config := map[string]interface{}{
+	config := map[string]any{
 		"media_folder": "Instagram",
 		"source_type":  4,
 		"caption":      pmRequest.Caption.Text,
 		"upload_id":    strconv.FormatInt(pmRequest.UploadAttr.UploadID, 10),
 		"device_id":    insta.dID,
 		"device":       goInstaDeviceSettings,
-		"edits": map[string]interface{}{
+		"edits": map[string]any{
 			"crop_original_size": []int{width * 1.0, height * 1.0},
 			"crop_center":        []float32{0.0, 0.0},
 			"crop_zoom":          1.0,
 			"filter_type":        pmRequest.FilterType,
 		},
-		"extra": map[string]interface{}{
+		"extra": map[string]any{
 			"source_width":  width,
 			"source_height": height,
 		},
@@ -1326,14 +1326,14 @@ func (insta *Instagram) initVideo(name string, ruploadParams map[string]string, 
 	return nil
 }
 
-func (insta *Instagram) uploadVideoFinish(pmRequest PostMediaRequest) (map[string]interface{}, error) {
-	config := map[string]interface{}{
+func (insta *Instagram) uploadVideoFinish(pmRequest PostMediaRequest) (map[string]any, error) {
+	config := map[string]any{
 		"upload_id": strconv.FormatInt(pmRequest.UploadAttr.UploadID, 10),
 		"caption":   pmRequest.Caption.Text,
 		"length":    pmRequest.VideoDuration / 1000,
 		"width":     pmRequest.OriginalWidth,
 		"height":    pmRequest.OriginalHeight,
-		"clips": []map[string]interface{}{
+		"clips": []map[string]any{
 			{
 				"length":      pmRequest.VideoDuration / 1000,
 				"source_type": "4",
@@ -1375,7 +1375,7 @@ func (insta *Instagram) uploadVideoFinish(pmRequest PostMediaRequest) (map[strin
 func (insta *Instagram) UploadAlbum(pmRequest PostMediaRequest) (Item, error) {
 	out := Item{}
 
-	var childrenMetadata []map[string]interface{}
+	var childrenMetadata []map[string]any
 	for _, photo := range pmRequest.Photos {
 		config, err := insta.postPhoto(PostMediaRequest{
 			Item:  pmRequest.Item,
@@ -1389,7 +1389,7 @@ func (insta *Instagram) UploadAlbum(pmRequest PostMediaRequest) (Item, error) {
 	}
 	albumUploadID := time.Now().Unix()
 
-	config := map[string]interface{}{
+	config := map[string]any{
 		"caption":           pmRequest.Caption.Text,
 		"client_sidecar_id": albumUploadID,
 		"children_metadata": childrenMetadata,
