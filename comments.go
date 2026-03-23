@@ -61,7 +61,7 @@ func (comments *Comments) Disable() error {
 
 	insta := comments.item.media.instagram()
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"media_id": comments.item.ID,
 		},
 	)
@@ -91,7 +91,7 @@ func (comments *Comments) Enable() error {
 
 	insta := comments.item.media.instagram()
 	data, err := insta.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"media_id": comments.item.ID,
 		},
 	)
@@ -188,7 +188,7 @@ func (comments *Comments) Add(text string) (err error) {
 		}
 
 		query := insta.prepareDataQuery(
-			map[string]interface{}{
+			map[string]any{
 				"recipient_users": to,
 				"action":          "send_item",
 				"media_id":        item.ID,
@@ -207,7 +207,7 @@ func (comments *Comments) Add(text string) (err error) {
 	case *FeedMedia: // normal media
 		var data string
 		data, err = insta.prepareData(
-			map[string]interface{}{
+			map[string]any{
 				"comment_text": text,
 			},
 		)

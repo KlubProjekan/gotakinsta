@@ -12,7 +12,7 @@ type ChallengeStepData struct {
 	GoogleOauthToken string      `json:"google_oauth_token"`
 	Email            string      `json:"email"`
 	SecurityCode     string      `json:"security_code"`
-	ResendDelay      interface{} `json:"resend_delay"`
+	ResendDelay      any `json:"resend_delay"`
 	ContactPoint     string      `json:"contact_point"`
 	FormType         string      `json:"form_type"`
 }
@@ -42,7 +42,7 @@ func newChallenge(insta *Instagram) *Challenge {
 func (challenge *Challenge) updateState() error {
 	insta := challenge.insta
 
-	data, err := insta.prepareData(map[string]interface{}{
+	data, err := insta.prepareData(map[string]any{
 		"guid":      insta.uuid,
 		"device_id": insta.dID,
 	})
@@ -76,7 +76,7 @@ func (challenge *Challenge) selectVerifyMethod(choice string, isReplay ...bool) 
 		url = strings.Replace(url, "/challenge/", "/challenge/replay/", -1)
 	}
 
-	data, err := insta.prepareData(map[string]interface{}{
+	data, err := insta.prepareData(map[string]any{
 		"choice":    choice,
 		"guid":      insta.uuid,
 		"device_id": insta.dID,
@@ -108,7 +108,7 @@ func (challenge *Challenge) SendSecurityCode(code string) error {
 	insta := challenge.insta
 	url := challenge.insta.challengeURL
 
-	data, err := insta.prepareData(map[string]interface{}{
+	data, err := insta.prepareData(map[string]any{
 		"security_code": code,
 		"guid":          insta.uuid,
 		"device_id":     insta.dID,

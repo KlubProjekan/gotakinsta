@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type reqOptions struct {
@@ -37,7 +36,7 @@ type reqOptions struct {
 	Query map[string]string
 }
 
-func (insta *Instagram) sendSimpleRequest(uri string, a ...interface{}) (body []byte, err error) {
+func (insta *Instagram) sendSimpleRequest(uri string, a ...any) (body []byte, err error) {
 	return insta.sendRequest(
 		&reqOptions{
 			Endpoint: fmt.Sprintf(uri, a...),
@@ -105,14 +104,17 @@ func (insta *Instagram) sendRequest(o *reqOptions) (body []byte, err error) {
 	}
 	defer resp.Body.Close()
 
-	u, _ = url.Parse(goInstaAPIUrl)
+	u, err = url.Parse(goInstaAPIUrl)
+	if err != nil {
+		return nil, err
+	}
 	for _, value := range insta.c.Jar.Cookies(u) {
 		if strings.Contains(value.Name, "csrftoken") {
 			insta.token = value.Value
 		}
 	}
 
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = io.ReadAll(resp.Body)
 	if err == nil {
 		err = isError(resp.StatusCode, body)
 	}
@@ -152,8 +154,8 @@ func isError(code int, body []byte) (err error) {
 	return nil
 }
 
-func (insta *Instagram) prepareData(other ...map[string]interface{}) (string, error) {
-	data := map[string]interface{}{
+func (insta *Instagram) prepareData(other ...map[string]any) (string, error) {
+	data := map[string]any{
 		"_uuid":      insta.uuid,
 		"_csrftoken": insta.token,
 	}
@@ -167,13 +169,13 @@ func (insta *Instagram) prepareData(other ...map[string]interface{}) (string, er
 		}
 	}
 	b, err := json.Marshal(data)
-	if err == nil {
-		return b2s(b), err
+	if err != nil {
+		return "", err
 	}
-	return "", err
+	return b2s(b), nil
 }
 
-func (insta *Instagram) prepareDataQuery(other ...map[string]interface{}) map[string]string {
+func (insta *Instagram) prepareDataQuery(other ...map[string]any) map[string]string {
 	data := map[string]string{
 		"_uuid":      insta.uuid,
 		"_csrftoken": insta.token,
@@ -187,6 +189,5 @@ func (insta *Instagram) prepareDataQuery(other ...map[string]interface{}) map[st
 }
 
 func acquireRand(min, max int) int {
-	rand.Seed(time.Now().Unix())
 	return rand.Intn(max-min) + min
 }

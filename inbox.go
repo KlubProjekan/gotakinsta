@@ -170,7 +170,7 @@ func (inbox *Inbox) New(user *User, text string) error {
 	}
 
 	data := insta.prepareDataQuery(
-		map[string]interface{}{
+		map[string]any{
 			"recipient_users": to,
 			"client_context":  generateUUID(),
 			"thread_ids":      `["0"]`,
@@ -281,7 +281,7 @@ func (c *Conversation) Like() error {
 	}
 
 	data := insta.prepareDataQuery(
-		map[string]interface{}{
+		map[string]any{
 			"recipient_users": to,
 			"client_context":  generateUUID(),
 			"thread_ids":      b2s(thread),
@@ -317,7 +317,7 @@ func (c *Conversation) Send(text string) error {
 	}
 
 	data := insta.prepareDataQuery(
-		map[string]interface{}{
+		map[string]any{
 			"recipient_users": to,
 			"client_context":  generateUUID(),
 			"thread_ids":      b2s(thread),

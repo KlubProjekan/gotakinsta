@@ -103,10 +103,10 @@ type MineActivity struct {
 			SocialContext   string        `json:"social_context"`
 			Icon            string        `json:"icon"`
 			Caption         string        `json:"caption"`
-			MediaIds        []interface{} `json:"media_ids"`
-			ThumbnailUrls   []interface{} `json:"thumbnail_urls"`
-			LargeUrls       []interface{} `json:"large_urls"`
-			MediaInfos      []interface{} `json:"media_infos"`
+			MediaIds        []any `json:"media_ids"`
+			ThumbnailUrls   []any `json:"thumbnail_urls"`
+			LargeUrls       []any `json:"large_urls"`
+			MediaInfos      []any `json:"media_infos"`
 			Value           float64       `json:"value"`
 			IsNewSuggestion bool          `json:"is_new_suggestion"`
 		} `json:"items"`
@@ -116,7 +116,7 @@ type MineActivity struct {
 		PhotosOfYou int `json:"photos_of_you"`
 		Requests    int `json:"requests"`
 	} `json:"counts"`
-	FriendRequestStories []interface{} `json:"friend_request_stories"`
+	FriendRequestStories []any `json:"friend_request_stories"`
 	Stories              []struct {
 		Type      int `json:"type"`
 		StoryType int `json:"story_type"`
@@ -147,7 +147,7 @@ type MineActivity struct {
 		Pk string `json:"pk"`
 	} `json:"old_stories"`
 	ContinuationToken int64       `json:"continuation_token"`
-	Subscription      interface{} `json:"subscription"`
+	Subscription      any `json:"subscription"`
 	NextID            int64       `json:"next_max_id"`
 	Status            string      `json:"status"`
 }

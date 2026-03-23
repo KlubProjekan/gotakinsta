@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	neturl "net/url"
@@ -32,7 +31,7 @@ import (
 // Golang also provides the option to set a proxy using HTTP_PROXY env var.
 type Instagram struct {
 	user string
-	pass string
+	pass []byte // stored as []byte so it can be securely zeroed after login
 	// device id: android-1923fjnma8123
 	dID string
 	// uuid: 8493-1233-4312312-5123
@@ -122,7 +121,7 @@ func New(username, password string) *Instagram {
 	jar, _ := cookiejar.New(nil)
 	inst := &Instagram{
 		user: username,
-		pass: password,
+		pass: []byte(password),
 		dID: generateDeviceID(
 			generateMD5Hash(username + password),
 		),
@@ -202,7 +201,7 @@ func (inst *Instagram) Export(path string) error {
 		return err
 	}
 
-	return ioutil.WriteFile(path, bytes, 0644)
+	return os.WriteFile(path, bytes, 0644)
 }
 
 // Export exports selected *Instagram object options to an io.Writer
@@ -234,7 +233,7 @@ func Export(inst *Instagram, writer io.Writer) error {
 //
 // This function does not set proxy automatically. Use SetProxy after this call.
 func ImportReader(r io.Reader) (*Instagram, error) {
-	bytes, err := ioutil.ReadAll(r)
+	bytes, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +354,7 @@ func (inst *Instagram) zrToken() error {
 
 func (inst *Instagram) sendAdID() error {
 	data, err := inst.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"adid": inst.adid,
 		},
 	)
@@ -403,7 +402,7 @@ func (inst *Instagram) Login() error {
 	}
 
 	result, err := json.Marshal(
-		map[string]interface{}{
+		map[string]any{
 			"guid":                inst.uuid,
 			"login_attempt_count": 0,
 			"_csrftoken":          inst.token,
@@ -411,7 +410,7 @@ func (inst *Instagram) Login() error {
 			"adid":                inst.adid,
 			"phone_id":            inst.pid,
 			"username":            inst.user,
-			"password":            inst.pass,
+			"password":            string(inst.pass),
 			"google_tokens":       "[]",
 		},
 	)
@@ -429,7 +428,11 @@ func (inst *Instagram) Login() error {
 	if err != nil {
 		return err
 	}
-	inst.pass = ""
+	// Zero out password bytes before releasing the slice
+	for i := range inst.pass {
+		inst.pass[i] = 0
+	}
+	inst.pass = nil
 
 	// getting account data
 	res := accountResp{}
@@ -448,6 +451,9 @@ func (inst *Instagram) Login() error {
 
 // Logout closes current session
 func (inst *Instagram) Logout() error {
+	if inst.c == nil {
+		return nil
+	}
 	_, err := inst.sendSimpleRequest(urlLogout)
 	inst.c.Jar = nil
 	inst.c = nil
@@ -456,7 +462,7 @@ func (inst *Instagram) Logout() error {
 
 func (inst *Instagram) syncFeatures() error {
 	data, err := inst.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"id":          inst.uuid,
 			"experiments": goInstaExperiments,
 		},
@@ -478,13 +484,13 @@ func (inst *Instagram) syncFeatures() error {
 
 func (inst *Instagram) megaphoneLog() error {
 	data, err := inst.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"id":        inst.Account.ID,
 			"type":      "feed_aysf",
 			"action":    "seen",
 			"reason":    "",
 			"device_id": inst.dID,
-			"uuid":      generateMD5Hash(string(time.Now().Unix())),
+			"uuid":      generateMD5Hash(strconv.FormatInt(time.Now().Unix(), 10)),
 		},
 	)
 	if err != nil {
@@ -503,7 +509,7 @@ func (inst *Instagram) megaphoneLog() error {
 
 func (inst *Instagram) expose() error {
 	data, err := inst.prepareData(
-		map[string]interface{}{
+		map[string]any{
 			"id":         inst.Account.ID,
 			"experiment": "ig_android_profile_contextual_feed",
 		},
@@ -528,7 +534,7 @@ func (inst *Instagram) expose() error {
 // The argument can be int64 or string
 //
 // See example: examples/media/like.go
-func (inst *Instagram) GetMedia(o interface{}) (*FeedMedia, error) {
+func (inst *Instagram) GetMedia(o any) (*FeedMedia, error) {
 	media := &FeedMedia{
 		inst:   inst,
 		NextID: o,
